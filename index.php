@@ -1,9 +1,7 @@
 <?php 
 
-require_once("config.php");
+require_once("include.php");
 
-$init = new Config();
-
-$usuario = $init->select("SELECT * FROM cad_usuario");
-
-echo json_encode($usuario);
+$root = new Usuario();
+$root->getBYid(2);
+echo $root;

@@ -96,9 +96,7 @@ class Usuario {
     $this->setId(0);
     $this->setCad_registro(new DateTime());
     $this->setCad_senha("");
-
   }
-
   public function __toString(){
     return json_encode(array(
     "id"=>$this->getId(),
@@ -107,5 +105,157 @@ class Usuario {
     "cad_registro"=>$this->getCad_registro()->format('Y-m-d H:i:s'),
     ));
   }
+  /*Manipulando arquivos csv*/
+  public function convCSV(){
+    $sql = new Config();
+    $results = $sql->select("SELECT * FROM cad_usuario ORDER BY cad_name ");
+    $header =  array();
+    foreach($results[0] as $key => $values){
+      array_push($header, ucfirst($key));
+    }
+    $file = fopen("usuario.csv", "w+");
+    fwrite($file, implode(",",$header ). "\r\n");
+    foreach($results as $row){
+        $data = array();
+        foreach($row as $key => $value){
+          array_push($data, $value);
+        } /// foreach coluna
+        fwrite($file, implode(",",$data ) . "\r\n");
+    }// foreach dados
+    fclose($file);
+    
+  }
+  /*Excluir arquivos*/
+  public function excluirArquivos(){
+    $file = fopen("text.txt" , "w+");
+    fclose($file);
+    unlink("text.txt");
+    echo"Arquivo Excluido com sucesso";
+  }
+  /* Remover Dados*/
+  public function removerDados(){   
+    if(!is_dir("images")){
+      mkdir("images");
+    }
+    foreach(scandir("images") as $item){
+      if(!in_array($item , array(".", ".."))){
+        unlink("images/".$item);
+      }
+    }
+    echo "ok";
+  }
+    /* Ler arquivos */
+  public function lerArquivo(){
+    $filename = "usuario.csv";
+    if(file_exists($filename)){
+      $file = fopen($filename, "r");
+      $header = explode("," , fgets($file));
+      $data = array();
+      while($row = fgets($file)){
+        $rowData = explode(",",$row);
+        $linha = array();
+        for($i = 0; $i < count($header); $i++){
+          $linha[$header[$i]] = $rowData[$i]; 
+        }
+        array_push($data, $linha);
+      }
+      fclose($file);
+
+      echo json_encode($data);
+    }
+  }
+  /*Ler imagem*/
+  public function lerImagem(){
+    $filename = "logo.png";
+    $base64 = base64_encode(file_get_contents($filename));
+    $fileinfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimetype = $fileinfo->file($filename);
+    $base64encode = "data:" . $mimetype. ";base64," .$base64; 
+      ?>
+<img src="<?php echo $base64encode; ?>">;
+<a href="<?php echo $base64encode;?>" target="_blank">LinkPark </a>
+<?php
+    }
+      /*Ler Upload*/
+
+  public function upload(){
+    if($_SERVER["REQUEST_METHOD"] === "POST"){
+      $file = $_FILES["fileUpload"];
+      if($file["error"]){
+          throw new Exception("error".$file["error"]);
+      }
+      $dirUploads = "uplodas";
+      if(!is_dir($dirUploads)){
+        mkdir($dirUploads);
+      }
+      if(move_uploaded_file($file["tmp_name"], $dirUploads. DIRECTORY_SEPARATOR . $file["name"])){
+        echo "Realizado com sucesso";
+      }else{
+        throw new Exception("Não foi possivel realizar o upload");
+      }
+    }
+  }
+  /*Dowloads*/
+  public function dowload(){
+    $link = "https://conteudo.imguol.com.br/c/entretenimento/18/2019/07/17/free-fire-1563382037564_v2_1024x1.png";
+    $content = file_get_contents($link);
+    $parse = parse_url($link);
+    $basename = basename($parse["path"]);
+    $file = fopen($basename , "w+");
+    fwrite($file, $content);
+    fclose($file);
+    ?>
+<img src="<?php echo $basename ?>">
+<?php 
 }
-?>
+// mover arquivo
+  public function moverArquivo(){
+    $dir1 = "folder_01";
+    $dir2 = "folder_02";
+
+    if(!is_dir($dir1)){
+      mkdir($dir1);
+    }
+    if(!is_dir($dir2)){
+      mkdir($dir2);
+    }
+    $filename = "README.txt";
+    if(!file_exists($dir1 . DIRECTORY_SEPARATOR. $filename)){
+        $file = fopen($dir1 .DIRECTORY_SEPARATOR. $filename ,"w+" );
+        fwrite($file, date("d-m-Y H:i:s"));
+        fclose($file);
+    }
+    rename(
+      $dir1 . DIRECTORY_SEPARATOR. $filename,
+      $dir2 . DIRECTORY_SEPARATOR. $filename
+    );
+    echo "movido com sucesso";
+  }
+  // retornar json via php
+  public function retornoJson(){
+    $cep = "33200038";
+    $link ="https://viacep.com.br/ws/$cep/json/";
+    $ch = curl_init($link);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $data = json_decode($response , true);
+    print_r($data);
+  }
+  //criando um cookie
+  public function cookie(){
+    $data = array("empresa"=>"Treinamento de base");
+    setcookie("NOME_DO_COOKIE", json_encode($data) , time()+3600);
+    echo "ok";
+  }
+  //apresentando informação dos cookie
+  public function getCookie(){
+    $data = $_COOKIE["NOME_DO_COOKIE"];
+    if(isset($data)){
+     $obj = json_decode($data);
+     echo $obj->empresa;
+    }
+  }
+}
+    ?>
